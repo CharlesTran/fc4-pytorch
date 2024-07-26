@@ -6,6 +6,7 @@ from torch.nn.functional import normalize
 
 from auxiliary.settings import USE_CONFIDENCE_WEIGHTED_POOLING
 from classes.fc4.squeezenet.SqueezeNetLoader import SqueezeNetLoader
+from classes.fc4.vit.ViTLoader import ViTLoader
 
 """
 FC4: Fully Convolutional Color Constancy with Confidence-weighted Pooling
@@ -20,12 +21,14 @@ class FC4(torch.nn.Module):
         super().__init__()
 
         # SqueezeNet backbone (conv1-fire8) for extracting semantic features
-        squeezenet = SqueezeNetLoader(squeezenet_version).load(pretrained=True)
-        self.backbone = nn.Sequential(*list(squeezenet.children())[0][:12])
+        vit = ViTLoader().load(pretrained=True)
+        self.backbone = vit
 
         # Final convolutional layers (conv6 and conv7) to extract semi-dense feature maps
         self.final_convs = nn.Sequential(
-            # nn.MaxPool2d(kernel_size=2, stride=1, ceil_mode=True),
+            nn.MaxPool2d(kernel_size=2, stride=1, ceil_mode=True),
+            nn.Conv2d(1024, 512, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
             nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
@@ -43,19 +46,19 @@ class FC4(torch.nn.Module):
         bs = x.shape[0]
         x = self.backbone(x)
 
-        n_pixel = x.shape[-1] * x.shape[-2]
-        image_pred = x.flatten(1)
-        image_pred, _ = torch.sort(image_pred, dim=1)
-        tmp = []
-        for b in range(bs):
-            num_otsu_sel = get_otsu_k(image_pred[b, ...], sorted=True)
-            num_otsu_sel = max(num_otsu_sel, n_pixel // 2 + 1)
-            tpk = int(max(1, (n_pixel - num_otsu_sel) * self.otsu_portion))
-            topk_output = torch.topk(image_pred[b, ...], k=tpk, dim=0)[0]
-            tmp.append(topk_output.mean())
-        image_pred = torch.stack(tmp)
+        # n_pixel = x.shape[-1] * x.shape[-2]
+        # image_pred = x.flatten(1)
+        # image_pred, _ = torch.sort(image_pred, dim=1)
+        # tmp = []
+        # for b in range(bs):
+        #     num_otsu_sel = get_otsu_k(image_pred[b, ...], sorted=True)
+        #     num_otsu_sel = max(num_otsu_sel, n_pixel // 2 + 1)
+        #     tpk = int(max(1, (n_pixel - num_otsu_sel) * self.otsu_portion))
+        #     topk_output = torch.topk(image_pred[b, ...], k=tpk, dim=0)[0]
+        #     tmp.append(topk_output.mean())
+        # image_pred = torch.stack(tmp)
             
-        out = self.final_convs(image_pred)
+        out = self.final_convs(x)
 
         # Confidence-weighted pooling: "out" is a set of semi-dense feature maps
         if USE_CONFIDENCE_WEIGHTED_POOLING:

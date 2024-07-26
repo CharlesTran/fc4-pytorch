@@ -17,7 +17,7 @@ from classes.fc4.ModelFC4 import ModelFC4
 
 RANDOM_SEED = 0
 EPOCHS = 2000
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 LEARNING_RATE = 0.0003
 FOLD_NUM = 0
 
