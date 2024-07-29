@@ -59,17 +59,15 @@ class ColorCheckerDataset(data.Dataset):
                 valid_chroma_edges, get_hist_boundary(), 64,
                 rgb_input=valid_colors_edges)
         
-        additional_histogram = histogram
-        u_coord, v_coord = get_uv_coord(self.input_size,
-                                        tensor=False, normalize=True)
-        u_coord = np.expand_dims(u_coord, axis=0)
-        v_coord = np.expand_dims(v_coord, axis=0)
-        additional_histogram = np.concatenate([additional_histogram, u_coord],
-                                          axis=0)
-        additional_histogram = np.concatenate([additional_histogram, v_coord],
-                                            axis=0)
-        additional_histogram = np.expand_dims(additional_histogram, axis=0)
-        additional_histogram = to_tensor(additional_histogram, dims=4)
+        additional_histogram = histogram.to(DEVICE)
+        u_coord, v_coord = get_uv_coord(64, normalize=True)
+        additional_histogram = torch.cat([additional_histogram, u_coord],
+                                          dim=0)
+        additional_histogram = torch.cat([additional_histogram, v_coord],
+                                            dim=0)
+        additional_histogram = torch.unsqueeze(additional_histogram, axis=0)
+        # additional_histogram = to_tensor(additional_histogram, dims=4)
+        
         img = linear_to_nonlinear(normalize(img))
 
         if not self.__train:

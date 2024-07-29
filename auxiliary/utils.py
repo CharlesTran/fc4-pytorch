@@ -285,7 +285,7 @@ def to_tensor(im, dims=3):
         raise NotImplementedError
     return torch.from_numpy(im)
 
-def get_uv_coord(hist_size, tensor=True, normalize=False, device='cuda'):
+def get_uv_coord(hist_size, tensor=True, normalize=False, device=DEVICE):
     """ Gets uv-coordinate extra channels to augment each histogram as
         mentioned in the paper.
 
