@@ -5,7 +5,7 @@ import sys
 sys.path.append("/data/czx/fc4-pytorch")
 import torch
 from torch.utils.data import DataLoader
-
+import multiprocessing
 from auxiliary.settings import DEVICE, USE_CONFIDENCE_WEIGHTED_POOLING, make_deterministic
 from auxiliary.utils import print_metrics, log_metrics
 from classes.core.Evaluator import Evaluator
@@ -76,7 +76,7 @@ def main(opt):
         start = time.time()
 
         for i, (img, label, _) in enumerate(training_loader):
-            img, label = img.to(DEVICE), label.to(DEVICE)
+            # img, label = img.to(DEVICE), label.to(DEVICE)
             loss = model.optimize(img, label)
             train_loss.update(loss)
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=LEARNING_RATE)
     opt = parser.parse_args()
     make_deterministic(opt.random_seed)
-
+    multiprocessing.set_start_method('spawn')
     print("\n *** Training configuration ***")
     print("\t Fold num ........ : {}".format(opt.fold_num))
     print("\t Epochs .......... : {}".format(opt.epochs))

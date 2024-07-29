@@ -14,7 +14,7 @@ def make_deterministic(seed: int):
 
 # --- Device (cpu or cuda:n) ---
 
-DEVICE_TYPE = "cuda:2"
+DEVICE_TYPE = "cuda:0"
 
 
 def get_device() -> torch.device:

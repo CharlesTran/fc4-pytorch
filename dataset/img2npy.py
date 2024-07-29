@@ -1,29 +1,32 @@
 import os
 import sys
-sys.path.append('/data/czx/fc4-pytorch/')
+sys.path.append("/data/czx/fc4-pytorch")
 import cv2
 import numpy as np
 import torch
 from PIL import Image
 from tqdm import tqdm
 
-from auxiliary.utils import normalize, linear_to_nonlinear, bgr_to_rgb, correct
+from auxiliary.utils import *
+from classes.data.DataAugmenter import DataAugmenter
 
 """
 All images in the Color Checker dataset are linear images in the RAW format of the acquisition device, each with a
 Macbeth ColorChecker (MCC) chart, which provides an estimation of illuminant colors. To prevent the CNN from detecting
 and utilizing MCCs as a visual cue, all images are masked with provided locations of MCC during training and testing
 """
+PA = "/data/czx/dataset/gehler"
+PATH_TO_IMAGES = os.path.join(PA,"images")
+PATH_TO_COORDINATES = os.path.join(PA,"coordinates")
+PATH_TO_CC_METADATA = os.path.join(PA,"metadata.txt")
 
-PATH_TO_IMAGES = os.path.join("/data/czx/fc4-pytorch/dataset/gehler","images")
-PATH_TO_COORDINATES = os.path.join("/data/czx/fc4-pytorch/dataset/gehler","coordinates")
-PATH_TO_CC_METADATA = os.path.join("/data/czx/fc4-pytorch/dataset/gehler","metadata.txt")
-
-BASE_PATH = "/data/czx/fc4-pytorch/dataset/gehler/preprocessed"
-PATH_TO_NUMPY_DATA = os.path.join(BASE_PATH, "numpy_data")
-PATH_TO_NUMPY_LABELS = os.path.join(BASE_PATH, "numpy_labels")
-PATH_TO_LINEAR_IMAGES = os.path.join(BASE_PATH, "linear_images")
-PATH_TO_GT_CORRECTED = os.path.join(BASE_PATH, "gt_corrected")
+BASE_PATH = "preprocessed"
+PATH_TO_NUMPY_DATA = os.path.join(PA, BASE_PATH, "numpy_data")
+PATH_TO_NUMPY_LABELS = os.path.join(PA, BASE_PATH, "numpy_labels")
+PATH_TO_LINEAR_IMAGES = os.path.join(PA, BASE_PATH, "linear_images")
+PATH_TO_NONLINEAR_IMAGES = os.path.join(PA, BASE_PATH, "nonlinear_images")
+PATH_TO_GT_CORRECTED = os.path.join(PA, BASE_PATH, "gt_corrected")
+PATH_TO_HIST = os.path.join(PA, BASE_PATH, "hist")
 
 
 def main():
@@ -41,26 +44,48 @@ def main():
     os.makedirs(PATH_TO_NUMPY_LABELS, exist_ok=True)
     os.makedirs(PATH_TO_LINEAR_IMAGES, exist_ok=True)
     os.makedirs(PATH_TO_GT_CORRECTED, exist_ok=True)
-
+    os.makedirs(PATH_TO_NONLINEAR_IMAGES, exist_ok=True)
+    os.makedirs(PATH_TO_HIST, exist_ok=True)
+    
     print("Processing images at {} \n".format(PATH_TO_CC_METADATA))
 
     # Generate numpy dataset
     for img_metadata in tqdm(open(PATH_TO_CC_METADATA, 'r').readlines(), desc="Preprocessing images"):
         _, file_name, r, g, b = img_metadata.strip().split(' ')
-        file_name = file_name.split('.')[0]+".jpg"
-        img_without_mcc = load_image_without_mcc(file_name, get_mcc_coord(file_name))
-        np.save(os.path.join(PATH_TO_NUMPY_DATA, file_name), img_without_mcc)
+        # if not os.path.exists(os.path.join(PATH_TO_HIST, file_name+'.npy')):
+        if True: 
+            img_without_mcc = load_image_without_mcc(file_name, get_mcc_coord(file_name))
+            np.save(os.path.join(PATH_TO_NUMPY_DATA, file_name), img_without_mcc)
 
-        illuminant = [float(r), float(g), float(b)]
-        np.save(os.path.join(PATH_TO_NUMPY_LABELS, file_name), illuminant)
+            illuminant = [float(r), float(g), float(b)]
+            np.save(os.path.join(PATH_TO_NUMPY_LABELS, file_name), illuminant)
 
-        vis_img = Image.fromarray((linear_to_nonlinear(bgr_to_rgb(normalize(img_without_mcc))) * 255).astype(np.uint8))
-        vis_img.save(os.path.join(PATH_TO_LINEAR_IMAGES, file_name))
-        
-        img = Image.fromarray((bgr_to_rgb(normalize(img_without_mcc)) * 255).astype(np.uint8))
-        gt_corrected = correct(img, torch.from_numpy(np.array([illuminant])))
-        gt_corrected.save(os.path.join(PATH_TO_GT_CORRECTED, file_name))
+            # vis_img = Image.fromarray((linear_to_nonlinear(bgr_to_rgb(normalize(img_without_mcc))) * 255).astype(np.uint8))
+            # vis_img.save(os.path.join(PATH_TO_LINEAR_IMAGES, file_name))
 
+            # img = Image.fromarray((bgr_to_rgb(normalize(img_without_mcc)) * 255).astype(np.uint8))
+            # img.save(os.path.join(PATH_TO_NONLINEAR_IMAGES, file_name))
+            
+            # gt_corrected = correct(img, torch.from_numpy(np.array([illuminant])))
+            # gt_corrected.save(os.path.join(PATH_TO_GT_CORRECTED, file_name))
+
+            histogram = np.zeros((64, 64, 2))
+            valid_chroma_rgb, valid_colors_rgb = get_hist_colors(
+                img_without_mcc, rgb_to_uv)
+            histogram[:, :, 0] = compute_histogram(
+                valid_chroma_rgb, get_hist_boundary(), 64,
+                rgb_input=valid_colors_rgb)
+            edge_img = compute_edges(img_without_mcc)
+            valid_chroma_edges, valid_colors_edges = get_hist_colors(
+                edge_img, rgb_to_uv)
+
+            
+            histogram[:, :, 1] = compute_histogram(
+                valid_chroma_edges, get_hist_boundary(), 64,
+                rgb_input=valid_colors_edges)
+
+            np.save(os.path.join(PATH_TO_HIST, file_name),
+                    histogram)
 
 def load_image_without_mcc(file_name: str, mcc_coord: np.ndarray) -> np.ndarray:
     """ Masks the Macbeth Color Checker in the image with a black polygon """
