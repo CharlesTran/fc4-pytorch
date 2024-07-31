@@ -65,7 +65,7 @@ class ColorCheckerDataset(data.Dataset):
                                           dim=0)
         additional_histogram = torch.cat([additional_histogram, v_coord],
                                             dim=0)
-        additional_histogram = torch.unsqueeze(additional_histogram, axis=0)
+        # additional_histogram = torch.unsqueeze(additional_histogram, axis=0)
         # additional_histogram = to_tensor(additional_histogram, dims=4)
         
         img = linear_to_nonlinear(normalize(img))
@@ -73,7 +73,7 @@ class ColorCheckerDataset(data.Dataset):
         if not self.__train:
             img = img.type(torch.FloatTensor)
 
-        return img, illuminant, file_name
+        return img, illuminant, file_name, additional_histogram
 
     def __len__(self) -> int:
         return len(self.__fold_data)

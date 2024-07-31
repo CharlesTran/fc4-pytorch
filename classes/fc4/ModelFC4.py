@@ -18,7 +18,7 @@ class ModelFC4(Model):
         super().__init__()
         self._network = FC4().to(self._device)
 
-    def predict(self, img: Tensor, return_steps: bool = False) -> Union[Tensor, Tuple]:
+    def predict(self, img: Tensor, histogram: Tensor, return_steps: bool = False) -> Union[Tensor, Tuple]:
         """
         Performs inference on the input image using the FC4 method.
         @param img: the image for which an illuminant colour has to be estimated
@@ -28,15 +28,15 @@ class ModelFC4(Model):
         the confidence weights are also returned (used for visualizations)
         """
         if USE_CONFIDENCE_WEIGHTED_POOLING:
-            pred, rgb, confidence = self._network(img)
+            pred, rgb, confidence = self._network(img, histogram)
             if return_steps:
                 return pred, rgb, confidence
             return pred
         return self._network(img)
 
-    def optimize(self, img: Tensor, label: Tensor) -> float:
+    def optimize(self, img: Tensor, label: Tensor, histogram: Tensor) -> float:
         self._optimizer.zero_grad()
-        pred = self.predict(img)
+        pred = self.predict(img, histogram)
         loss = self.get_loss(pred, label)
         loss.backward()
         self._optimizer.step()

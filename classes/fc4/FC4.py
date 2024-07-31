@@ -19,10 +19,11 @@ class FC4(torch.nn.Module):
 
     def __init__(self, squeezenet_version: float = 1.1):
         super().__init__()
-        squeezenet = SqueezeNetLoader(squeezenet_version).load(pretrained=True)
-        self.backbone = nn.Sequential(*list(squeezenet.children())[0][:12])
+        squeezenet = SqueezeNetLoader(squeezenet_version).load(pretrained=False)
+        # self.backbone = nn.Sequential(*list(squeezenet.children())[0][:12])
         # self.backbone = ViTLoader().load(pretrained=True)
-        # self.backbone = TripletAttentionLoader().load()
+        self.backbone1 = TripletAttentionLoader().load()
+        self.backbone2 = nn.Sequential(*list(squeezenet.children())[0][:12])
 
         # Final convolutional layers (conv6 and conv7) to extract semi-dense feature maps
         self.final_convs = nn.Sequential(
@@ -36,15 +37,16 @@ class FC4(torch.nn.Module):
             nn.ReLU(inplace=True)
         )
 
-    def forward(self, x: Tensor) -> Union[tuple, Tensor]:
+    def forward(self, img: Tensor, histogram: Tensor) -> Union[tuple, Tensor]:
         """
         Estimate an RGB colour for the illuminant of the input image
         @param x: the image for which the colour of the illuminant has to be estimated
         @return: the colour estimate as a Tensor. If confidence-weighted pooling is used, the per-path colour estimates
         and the confidence weights are returned as well (used for visualizations)
         """
-        bs = x.shape[0]
-        x = self.backbone(x)
+        bs = img.shape[0]
+        x1 = self.backbone1(img) #[b, 1024, 4, 4]
+        x2 = self.backbone2(histogram)
 
         # n_pixel = x.shape[-1] * x.shape[-2]
         # image_pred = x.flatten(1)

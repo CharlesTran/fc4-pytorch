@@ -17,7 +17,7 @@ from classes.fc4.ModelFC4 import ModelFC4
 
 RANDOM_SEED = 0
 EPOCHS = 2000
-BATCH_SIZE = 16
+BATCH_SIZE = 10
 LEARNING_RATE = 0.0003
 FOLD_NUM = 0
 
@@ -75,9 +75,9 @@ def main(opt):
         train_loss.reset()
         start = time.time()
 
-        for i, (img, label, _) in enumerate(training_loader):
+        for i, (img, label, _, histogram) in enumerate(training_loader):
             # img, label = img.to(DEVICE), label.to(DEVICE)
-            loss = model.optimize(img, label)
+            loss = model.optimize(img, label, histogram)
             train_loss.update(loss)
 
             if i % 5 == 0:
