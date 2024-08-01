@@ -8,6 +8,7 @@ from auxiliary.settings import USE_CONFIDENCE_WEIGHTED_POOLING
 from classes.fc4.squeezenet.SqueezeNetLoader import SqueezeNetLoader
 from classes.fc4.vit.ViTLoader import ViTLoader
 from classes.fc4.tripletatten.TripletAttentionLoader import TripletAttentionLoader
+from classes.fc4.resnet.ResNetLoader import ResNetLoader
 """
 FC4: Fully Convolutional Color Constancy with Confidence-weighted Pooling
 * Original code: https://github.com/yuanming-hu/fc4
@@ -23,13 +24,15 @@ class FC4(torch.nn.Module):
         # self.backbone = nn.Sequential(*list(squeezenet.children())[0][:12])
         # self.backbone = ViTLoader().load(pretrained=True)
         self.backbone1 = TripletAttentionLoader().load()
-        self.backbone2 = nn.Sequential(*list(squeezenet.children())[0][:12])
+        self.backbone2 = ResNetLoader(50).load()
 
         # Final convolutional layers (conv6 and conv7) to extract semi-dense feature maps
         self.final_convs = nn.Sequential(
             nn.MaxPool2d(kernel_size=2, stride=1, ceil_mode=True),
-            # nn.Conv2d(1024, 512, kernel_size=6, stride=1, padding=3),
-            # nn.ReLU(inplace=True),
+            nn.Conv2d(2048, 1024, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(1024, 512, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
             nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
@@ -47,7 +50,7 @@ class FC4(torch.nn.Module):
         bs = img.shape[0]
         x1 = self.backbone1(img) #[b, 1024, 4, 4]
         x2 = self.backbone2(histogram)
-
+        x = torch.cat([x1, x2], dim=1)
         # n_pixel = x.shape[-1] * x.shape[-2]
         # image_pred = x.flatten(1)
         # image_pred, _ = torch.sort(image_pred, dim=1)

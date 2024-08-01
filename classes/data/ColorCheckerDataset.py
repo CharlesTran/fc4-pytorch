@@ -10,7 +10,7 @@ from auxiliary.utils import *
 from auxiliary.settings import *
 from classes.data.DataAugmenter import DataAugmenter
 
-BASE = "/data/czx/dataset/gehler"
+BASE = "/home/ubuntu/Desktop/public/colorconstancy/dataset/gehler"
 
 class ColorCheckerDataset(data.Dataset):
 

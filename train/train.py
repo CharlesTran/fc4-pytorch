@@ -2,7 +2,7 @@ import argparse
 import os
 import time
 import sys
-sys.path.append("/data/czx/fc4-pytorch")
+sys.path.append("/home/ubuntu/Desktop/public/colorconstancy/fc4-pytorch")
 import torch
 from torch.utils.data import DataLoader
 import multiprocessing
