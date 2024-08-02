@@ -783,3 +783,4 @@ modules.xml
 /test/conf/
 /test/pred/
 classes/data/ColorCheckerDataset.py
+auxiliary/settings.py

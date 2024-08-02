@@ -17,7 +17,7 @@ from classes.fc4.ModelFC4 import ModelFC4
 
 RANDOM_SEED = 0
 EPOCHS = 2000
-BATCH_SIZE = 10
+BATCH_SIZE = 20
 LEARNING_RATE = 0.0003
 FOLD_NUM = 0
 
@@ -97,9 +97,9 @@ def main(opt):
             print("--------------------------------------------------------------\n")
 
             with torch.no_grad():
-                for i, (img, label, file_name) in enumerate(test_loader):
+                for i, (img, label, file_name, histogram) in enumerate(test_loader):
                     img, label = img.to(DEVICE), label.to(DEVICE)
-                    pred, rgb, confidence = model.predict(img, return_steps=True)
+                    pred, rgb, confidence = model.predict(img, histogram, return_steps=True)
                     loss = model.get_loss(pred, label).item()
                     val_loss.update(loss)
                     evaluator.add_error(model.get_loss(pred, label).item())
