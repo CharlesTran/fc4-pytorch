@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append("/data/czx/fc4-pytorch")
+sys.path.append("../")
 import cv2
 import numpy as np
 import torch
@@ -15,7 +15,7 @@ All images in the Color Checker dataset are linear images in the RAW format of t
 Macbeth ColorChecker (MCC) chart, which provides an estimation of illuminant colors. To prevent the CNN from detecting
 and utilizing MCCs as a visual cue, all images are masked with provided locations of MCC during training and testing
 """
-PA = "/data/czx/dataset/gehler"
+PA = "/home/ubuntu/Desktop/public/colorconstancy/dataset/NUS8/Canon EOS 600D"
 PATH_TO_IMAGES = os.path.join(PA,"images")
 PATH_TO_COORDINATES = os.path.join(PA,"coordinates")
 PATH_TO_CC_METADATA = os.path.join(PA,"metadata.txt")
@@ -26,7 +26,6 @@ PATH_TO_NUMPY_LABELS = os.path.join(PA, BASE_PATH, "numpy_labels")
 PATH_TO_LINEAR_IMAGES = os.path.join(PA, BASE_PATH, "linear_images")
 PATH_TO_NONLINEAR_IMAGES = os.path.join(PA, BASE_PATH, "nonlinear_images")
 PATH_TO_GT_CORRECTED = os.path.join(PA, BASE_PATH, "gt_corrected")
-PATH_TO_HIST = os.path.join(PA, BASE_PATH, "hist")
 
 
 def main():
@@ -45,7 +44,6 @@ def main():
     os.makedirs(PATH_TO_LINEAR_IMAGES, exist_ok=True)
     os.makedirs(PATH_TO_GT_CORRECTED, exist_ok=True)
     os.makedirs(PATH_TO_NONLINEAR_IMAGES, exist_ok=True)
-    os.makedirs(PATH_TO_HIST, exist_ok=True)
     
     print("Processing images at {} \n".format(PATH_TO_CC_METADATA))
 
@@ -69,23 +67,6 @@ def main():
             # gt_corrected = correct(img, torch.from_numpy(np.array([illuminant])))
             # gt_corrected.save(os.path.join(PATH_TO_GT_CORRECTED, file_name))
 
-            histogram = np.zeros((64, 64, 2))
-            valid_chroma_rgb, valid_colors_rgb = get_hist_colors(
-                img_without_mcc, rgb_to_uv)
-            histogram[:, :, 0] = compute_histogram(
-                valid_chroma_rgb, get_hist_boundary(), 64,
-                rgb_input=valid_colors_rgb)
-            edge_img = compute_edges(img_without_mcc)
-            valid_chroma_edges, valid_colors_edges = get_hist_colors(
-                edge_img, rgb_to_uv)
-
-            
-            histogram[:, :, 1] = compute_histogram(
-                valid_chroma_edges, get_hist_boundary(), 64,
-                rgb_input=valid_colors_edges)
-
-            np.save(os.path.join(PATH_TO_HIST, file_name),
-                    histogram)
 
 def load_image_without_mcc(file_name: str, mcc_coord: np.ndarray) -> np.ndarray:
     """ Masks the Macbeth Color Checker in the image with a black polygon """
