@@ -36,11 +36,11 @@ def mat_illum(path):
         mat.append(mat_load['real_illum'].real_illum_by_cc19_PNG)
     return mat
 
-def white_balance_image(img,Gain_R, Gain_G, Gain_B):    
+def white_balance_image(img, filename, Gain_R, Gain_G, Gain_B):    
     img = img * 100.0; #12bit data
     image = convert_to_8bit(img, 2.5)
-    image = (cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-            
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    cv2.imwrite(os.path.join(PATH_TO_NONLINEAR_IMAGES, filename+'.png'), image)
     image[:, :, 0] = np.minimum(image[:, :, 0] * Gain_R,255)
     image[:, :, 1] = np.minimum(image[:, :, 1] * Gain_G,255)
     image[:, :, 2] = np.minimum(image[:, :, 2] * Gain_B,255)
@@ -48,7 +48,7 @@ def white_balance_image(img,Gain_R, Gain_G, Gain_B):
     gamma = 1/2.2
     image = pow(image, gamma) * (255.0/pow(255,gamma))
     image = np.array(image,dtype=np.uint8)
-    image8 = (cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    image8 = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return image8
 def get_mcc_coord(file_name: str) -> np.ndarray:
     """ Computes the relative MCC coordinates for the given image """
@@ -77,7 +77,6 @@ def main():
 
     os.makedirs(PATH_TO_NUMPY_DATA, exist_ok=True)
     os.makedirs(PATH_TO_NUMPY_LABELS, exist_ok=True)
-    os.makedirs(PATH_TO_LINEAR_IMAGES, exist_ok=True)
     os.makedirs(PATH_TO_GT_CORRECTED, exist_ok=True)
     os.makedirs(PATH_TO_NONLINEAR_IMAGES, exist_ok=True)
 
@@ -97,7 +96,7 @@ def main():
         Gain_G= float(np.max(mat['groundtruth_illuminants'][i]))/float((mat['groundtruth_illuminants'][i][1]))
         Gain_B= float(np.max(mat['groundtruth_illuminants'][i]))/float((mat['groundtruth_illuminants'][i][2]))
         
-        image8 = white_balance_image(img_without_mcc, Gain_R, Gain_G, Gain_B)
+        image8 = white_balance_image(img_without_mcc, filename, Gain_R, Gain_G, Gain_B)
         save_dir = os.path.join(PATH_TO_GT_CORRECTED, filename+'.png')
         cv2.imwrite(save_dir, image8)
 

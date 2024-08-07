@@ -51,17 +51,6 @@ class FC4(torch.nn.Module):
         x1 = self.backbone1(img) #[b, 1024, 4, 4]
         x2 = self.backbone2(histogram)
         x = torch.cat([x1, x2], dim=1)
-        # n_pixel = x.shape[-1] * x.shape[-2]
-        # image_pred = x.flatten(1)
-        # image_pred, _ = torch.sort(image_pred, dim=1)
-        # tmp = []
-        # for b in range(bs):
-        #     num_otsu_sel = get_otsu_k(image_pred[b, ...], sorted=True)
-        #     num_otsu_sel = max(num_otsu_sel, n_pixel // 2 + 1)
-        #     tpk = int(max(1, (n_pixel - num_otsu_sel) * self.otsu_portion))
-        #     topk_output = torch.topk(image_pred[b, ...], k=tpk, dim=0)[0]
-        #     tmp.append(topk_output.mean())
-        # image_pred = torch.stack(tmp)
             
         out = self.final_convs(x)
 
