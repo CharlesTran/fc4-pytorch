@@ -20,7 +20,6 @@ PATH_TO_CC_METADATA = os.path.join(PA,"Canon600D_gt.mat")
 BASE_PATH = "preprocessed"
 PATH_TO_NUMPY_DATA = os.path.join(PA, BASE_PATH, "numpy_data")
 PATH_TO_NUMPY_LABELS = os.path.join(PA, BASE_PATH, "numpy_labels")
-PATH_TO_LINEAR_IMAGES = os.path.join(PA, BASE_PATH, "linear_images")
 PATH_TO_NONLINEAR_IMAGES = os.path.join(PA, BASE_PATH, "nonlinear_images")
 PATH_TO_GT_CORRECTED = os.path.join(PA, BASE_PATH, "gt_corrected")
 
@@ -37,9 +36,9 @@ def mat_illum(path):
         mat.append(mat_load['real_illum'].real_illum_by_cc19_PNG)
     return mat
 
-def white_balance_image(img12, bit, Gain_R, Gain_G, Gain_B):    
-    img12 = (img12/(2**bit - 1))*100.0; #12bit data
-    image = convert_to_8bit(img12, 2.5)
+def white_balance_image(img,Gain_R, Gain_G, Gain_B):    
+    img = img * 100.0; #12bit data
+    image = convert_to_8bit(img, 2.5)
     image = (cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             
     image[:, :, 0] = np.minimum(image[:, :, 0] * Gain_R,255)
@@ -53,27 +52,16 @@ def white_balance_image(img12, bit, Gain_R, Gain_G, Gain_B):
     return image8
 def get_mcc_coord(file_name: str) -> np.ndarray:
     """ Computes the relative MCC coordinates for the given image """
-
     lines = open(os.path.join(PATH_TO_COORDINATES, file_name.split('.')[0] + "_mask.txt"), 'r').readlines()
-    roi = [float(lines[0].split(',')[0]),float(lines[0].split(',')[1]),float(lines[0].split(',')[2]),float(lines[0].split(',')[3])]
-    polygon = []
-    for line in [lines[1], lines[2], lines[4], lines[3]]:
-        line = line.strip().split(',')
-        x, y = float(line[0]), float(line[1])
-        polygon.append((x, y))
+    roi = list(map(float, lines[0].strip().split(',')))
+    return roi
 
-    return np.array(polygon, dtype='float32')
-
-def load_image_without_mcc(file_name: str, mcc_coord: np.ndarray):
-    img12 = cv2.imread(os.path.join(PATH_TO_IMAGES, file_name), cv2.IMREAD_UNCHANGED).astype(np.float32)
+def load_image_without_mcc(file_name: str, roi: list):
+    img12 = cv2.imread(os.path.join(PATH_TO_IMAGES, file_name+'.PNG'), cv2.IMREAD_UNCHANGED).astype(np.float32)
     img12 = np.maximum(0.,img12 - 2048.)
     img = np.clip(img12/img12.max(), 0, 1)*(2**12-1)
-    polygon = mcc_coord * np.array([img.shape[1], img.shape[0]])
-    polygon = polygon.astype(np.int32)
-
-    # Fill the polygon to img
-    cv2.fillPoly(img, pts=[polygon], color=(1e-5,) * 3)
-
+    x, y, w, h = map(int, roi)
+    img[y:y+h, x:x+w] = 1e-5
     return img
 
 def main():
@@ -99,17 +87,18 @@ def main():
     for i in tqdm(range(len(flist)), desc="Preprocessing images"):
         filename = mat['all_image_names'][i]
 
-        load_image_without_mcc(filename, get_mcc_coord(filename))
-        
+        img_without_mcc=load_image_without_mcc(filename, get_mcc_coord(filename))
+        np.save(os.path.join(PATH_TO_NUMPY_DATA, filename), img_without_mcc)
 
         illuminant = [float(mat['groundtruth_illuminants'][i][0]), float(mat['groundtruth_illuminants'][i][1]), float(mat['groundtruth_illuminants'][i][2])]
         np.save(os.path.join(PATH_TO_NUMPY_LABELS, mat['all_image_names'][i]), illuminant)
+
         Gain_R= float(np.max(mat['groundtruth_illuminants'][i]))/float((mat['groundtruth_illuminants'][i][0]))
         Gain_G= float(np.max(mat['groundtruth_illuminants'][i]))/float((mat['groundtruth_illuminants'][i][1]))
         Gain_B= float(np.max(mat['groundtruth_illuminants'][i]))/float((mat['groundtruth_illuminants'][i][2]))
         
-        image8 = white_balance_image(img12, 12, Gain_R, Gain_G, Gain_B)
-        save_dir = PATH_TO_IMAGES.replace('png', 'GroundTruth') + "/%04d.png" % (i+1)
+        image8 = white_balance_image(img_without_mcc, Gain_R, Gain_G, Gain_B)
+        save_dir = os.path.join(PATH_TO_GT_CORRECTED, filename+'.png')
         cv2.imwrite(save_dir, image8)
 
 if __name__ == "__main__":
