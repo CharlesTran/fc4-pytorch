@@ -23,7 +23,6 @@ class ColorCheckerDataset(data.Dataset):
         path_to_metadata = os.path.join(BASE, "metadata.txt")
         self.__path_to_data = os.path.join(BASE, "preprocessed", "numpy_data")
         self.__path_to_label = os.path.join(BASE, "preprocessed", "numpy_labels")
-        self.__path_to_hist = os.path.join(BASE, "preprocessed", "hist")
         
         folds = scipy.io.loadmat(path_to_folds)
         img_idx = folds["tr_split" if self.__train else "te_split"][0][folds_num][0]
