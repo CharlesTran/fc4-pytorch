@@ -11,6 +11,7 @@ from auxiliary.utils import print_metrics, log_metrics
 from classes.core.Evaluator import Evaluator
 from classes.core.LossTracker import LossTracker
 from classes.data.ColorCheckerDataset import ColorCheckerDataset
+from classes.data.NUSDataset import NUSDataset
 from classes.fc4.ModelFC4 import ModelFC4
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -49,10 +50,12 @@ def main(opt):
     model.set_optimizer(lr)
 
     training_set = ColorCheckerDataset(train=True, folds_num=fold_num)
+    training_set = NUSDataset(train=True)
     training_loader = DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
     print("\n Training set size ... : {}".format(len(training_set)))
 
     test_set = ColorCheckerDataset(train=False, folds_num=fold_num)
+    training_set = NUSDataset(train=False)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=True)
     print(" Test set size ....... : {}\n".format(len(test_set)))
 
