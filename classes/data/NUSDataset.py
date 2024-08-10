@@ -39,7 +39,7 @@ class NUSDataset(data.Dataset):
                 yaml.dump(data=trainval, stream=f)
         with open(path_to_trainval, 'r') as f:
             folds = yaml.load(f.read(), Loader=yaml.FullLoader)
-            self.file_names = folds["train" if self.__train else "val"]
+        self.file_names = folds["train" if self.__train else "val"]
 
     def __getitem__(self, index):
         file_name = self.file_names[index]
@@ -85,7 +85,7 @@ class NUSDataset(data.Dataset):
         return img, illuminant, file_name, additional_histogram
 
     def __len__(self) -> int:
-        return len(self.__fold_data)
+        return len(self.file_names)
 
         
 

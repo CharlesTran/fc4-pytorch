@@ -49,13 +49,13 @@ def main(opt):
     model.log_network(path_to_log)
     model.set_optimizer(lr)
 
-    training_set = ColorCheckerDataset(train=True, folds_num=fold_num)
+    # training_set = ColorCheckerDataset(train=True, folds_num=fold_num)
     training_set = NUSDataset(train=True)
-    training_loader = DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
+    training_loader = DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
     print("\n Training set size ... : {}".format(len(training_set)))
 
-    test_set = ColorCheckerDataset(train=False, folds_num=fold_num)
-    training_set = NUSDataset(train=False)
+    # test_set = ColorCheckerDataset(train=False, folds_num=fold_num)
+    test_set = NUSDataset(train=False)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=True)
     print(" Test set size ....... : {}\n".format(len(test_set)))
 

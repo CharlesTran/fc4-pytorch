@@ -11,11 +11,21 @@ from tqdm import tqdm
 import scipy.io
 from auxiliary.utils import *
 from classes.data.DataAugmenter import DataAugmenter
-
-PA = "/home/ubuntu/Desktop/public/colorconstancy/dataset/NUS8/Canon EOS 600D"
+camera = 'Canon_EOS_1Ds'
+gt_mat = {
+    "Canon_EOS_600D": "Canon600D_gt.mat",
+    "Canon_EOS_1Ds": "Canon1DsMkIII_gt.mat",
+    "Fujifilm_X_M1": "FujifilmXM1_gt.mat",
+}
+PA_map = {
+    "Canon_EOS_600D":"Canon EOS 600D",
+    "Canon_EOS_1Ds": "Canon EOS-1Ds Mark III",
+    "Fujifile_X_M1": "Fujifilm X-M1"
+}
+PA = "/home/ubuntu/Desktop/public/colorconstancy/dataset/NUS8/"+PA_map[camera]
 PATH_TO_IMAGES = os.path.join(PA,"png")
 PATH_TO_COORDINATES = os.path.join(PA,"CHECKER")
-PATH_TO_CC_METADATA = os.path.join(PA,"Canon600D_gt.mat")
+PATH_TO_CC_METADATA = os.path.join(PA,gt_mat[camera])
 
 BASE_PATH = "preprocessed"
 PATH_TO_NUMPY_DATA = os.path.join(PA, BASE_PATH, "numpy_data")
@@ -23,18 +33,10 @@ PATH_TO_NUMPY_LABELS = os.path.join(PA, BASE_PATH, "numpy_labels")
 PATH_TO_NONLINEAR_IMAGES = os.path.join(PA, BASE_PATH, "nonlinear_images")
 PATH_TO_GT_CORRECTED = os.path.join(PA, BASE_PATH, "gt_corrected")
 
+
 def convert_to_8bit(arr, clip_percentile):
     arr = np.clip(arr * (255.0 / np.percentile(arr, 100 - clip_percentile, keepdims=True)), 0, 255)
     return arr.astype(np.uint8)
-
-
-def mat_illum(path):
-    index_list = glob(path + '\\real_illum\*.mat')
-    mat = []
-    for i in range(len(index_list)):
-        mat_load = scipy.io.loadmat(index_list[i],  squeeze_me=True, struct_as_record = False)
-        mat.append(mat_load['real_illum'].real_illum_by_cc19_PNG)
-    return mat
 
 def white_balance_image(img, filename, Gain_R, Gain_G, Gain_B):    
     img = img * 100.0; #12bit data
@@ -56,15 +58,15 @@ def get_mcc_coord(file_name: str) -> np.ndarray:
     roi = list(map(float, lines[0].strip().split(',')))
     return roi
 
-def load_image_without_mcc(file_name: str, roi: list):
+def load_image_without_mcc(file_name: str, roi: list, darkness_level: float):
     img12 = cv2.imread(os.path.join(PATH_TO_IMAGES, file_name+'.PNG'), cv2.IMREAD_UNCHANGED).astype(np.float32)
-    img12 = np.maximum(0.,img12 - 2048.)
-    img = np.clip(img12/img12.max(), 0, 1)*(2**12-1)
+    img12 = np.maximum(0.,img12 - darkness_level)
+    img = img12/(2**12-1)
     x, y, w, h = map(int, roi)
     img[y:y+h, x:x+w] = 1e-5
     return img
 
-def main():
+def main(camera: str):
     print("\n=================================================\n")
     print("\t Masking MCC charts")
     print("\n=================================================\n")
@@ -86,7 +88,7 @@ def main():
     for i in tqdm(range(len(flist)), desc="Preprocessing images"):
         filename = mat['all_image_names'][i]
 
-        img_without_mcc=load_image_without_mcc(filename, get_mcc_coord(filename))
+        img_without_mcc=load_image_without_mcc(filename, get_mcc_coord(filename), mat['darkness_level'])
         np.save(os.path.join(PATH_TO_NUMPY_DATA, filename), img_without_mcc)
 
         illuminant = [float(mat['groundtruth_illuminants'][i][0]), float(mat['groundtruth_illuminants'][i][1]), float(mat['groundtruth_illuminants'][i][2])]
@@ -101,4 +103,5 @@ def main():
         cv2.imwrite(save_dir, image8)
 
 if __name__ == "__main__":
-    main()
+    
+    main(camera)
